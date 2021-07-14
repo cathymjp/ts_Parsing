@@ -2,19 +2,14 @@ import glob
 import os
 
 
-# class transport_stream:
-#     continuity_counter = packet[3] & 0xf
-
-
 def open_file(file_input):
-
     # while True:
     #   ts_packets = []
     # testing_array = []
     #     num = 0
     #     # file_input = input("Enter the filename of .ts: ")
     #     # if os.path.exists(file_input + '.ts'):
-    # with open(file_input + '.ts', "rb") as file_object:
+    # file_open = open(file_input + '.ts', "rb")
 
     file_open = open(file_input, 'rb')
     while True:
@@ -40,13 +35,27 @@ def decompose_file(file_name):
     transport_error_indicator = ('{0:08b}'.format(file_name[1]))[0]         # transport_error_indicator (1)
     # print("transport_Error_indicator", transport_error_indicator)
 
-    payload_unit_start_indicator = ('{0:08b}'.format(file_name[1]))[1]         # payload_unit_start_indicator (1)
-    # print("payload_unit_start_indicator", payload_unit_start_indicator)
+    # <DONE> payload_unit_start_indicator (1)
+    payload_unit_start_indicator = (file_name[1] >> 6) & 1
+    print("payload_unit_start_indicator: ", bin(payload_unit_start_indicator))
+
+    if payload_unit_start_indicator == 0b1:
+        print(">> Second condition met for PAT")
+
+    # <DONE> table_id (8)
+    table_id = file_name[5]
+    print("table_id: ", hex(table_id))
+
+    if table_id == 0x00:
+        print(">> Third condition met for PAT")
 
     transport_priority = ('{0:08b}'.format(file_name[1]))[2]         # transport_priority (1)
     # print("transport_priority", transport_priority)
 
+
+    # pid (13)
     pid = file_name[1]
+    print("pid", pid)
 
     transport_scrambling_control = file_name[3]         # transport_scrambling_control (2)
     # print("transport_scrambling_control", '{0:08b}'.format(transport_scrambling_control)[0],
@@ -59,15 +68,18 @@ def decompose_file(file_name):
     continuity_counter = file_name[3]                   # continuity_counter (4)
     for i in range(4, 8):
         continuity_counter_list.append('{0:08b}'.format(continuity_counter)[i])
-        # print("continuity_counter", '{0:08b}'.format(continuity_counter)[i])
+        print("continuity_counter", '{0:08b}'.format(continuity_counter)[i])
+
     for b in continuity_counter_list:
         num = 2 * num + int(b)
     # print("continuity counter: ", num)
+
     # Four bytes after 0x47
     print("---------- Four Bytes ----------")
     for i in range(0, 5):
-        print("file_name {}".format(i), ": ",  file_name[i], ". In binary: ", '{0:08b}'.format(file_name[i]))
-        # print(('{0:08b}'.format(file_name[i]))[0])
+        # print("ByteArray", bytearray(file_name))
+        print("file_name {}".format(i), ": ",  file_name[i], ". In binary: ", '{0:08b}'.format(file_name[i]),
+              "(", bin(file_name[i]), ")")
 
     # print("file_name[5]", file_name[5])
 
@@ -124,10 +136,6 @@ def decompose_file(file_name):
         # print("ERROR: Invalid filename. Please enter again: ")
 
 
-
-
-
-
 def enter_pid(file):
     pid_value = input("Enter the PID value: ")
 
@@ -157,46 +165,19 @@ def calculate_PAT(file_name):
 
     # section length (12)
 
+
 def calculate_PMT():
 
     return
 
 
 def main():
-    file_input = "C:\\Users\\parkm\\Desktop\\dump_690000_25.ts"
-    open_file(file_input)
-    # print("Hex value: ", filename)
-
-    # ts_stream_from_file("C:\\Users\\parkm\\Desktop\\dump_690000_25.ts", 1024)
-    # ts_bytes = bytearray(open("C:\\Users\\parkm\\Desktop\\dump_690000_25.ts", 'rb').read(2 * 1024))
-    # new_str = ""
-    # print("ts+bytes", ts_bytes)
-    # with open("C:\\Users\\parkm\\Desktop\\dump_690000_25.ts", 'rb') as file_object:
-    #     print("bytearray(file_object.read(1024))", bytearray(file_object.read(1024)))
-    #     # hexdata = binascii.hexlify(file_object.read(188))
-    #     # print("hexdata", hexdata)
-    #     hexdata = file_object.read(188).hex()  # Read 188 bytes in hex
-    #     print("hexdata", hexdata)
-    #
-    #     "0x{:02x}".format(13)
-    #
-    #     print("new_str", new_str)
-    #     byte = hex(ord(file_object.read(1)))
-    #     # byte2 = ord(file_object.read(1024))
-    #     print("file_object.read(1) byte", byte)
-    #     print("\n188", byte)
-    #     data = file_object.read(188)
-    #     print(data)
-
-
-def ts_stream_from_file(filename, length=1024):
-    with open(filename, 'rb') as f:
-        print(bytearray(f.read(length)))
-        return bytearray(f.read(length))
+    open_file(file_input)       # In future, delete file_input to choosing file by asking the user or from file explorer
 
 
 if __name__ == "__main__":
     PACKET_SIZE = 188
     SYNC_BYTE = 0x74
 
+    file_input = "C:\\Users\\parkm\\Desktop\\dump_690000_25.ts"
     main()
