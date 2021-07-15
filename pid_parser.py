@@ -20,74 +20,77 @@ def open_file(file_input):
         decompose_file(reading_file)
 
 
-def decompose_file(file_name):
-    sync_byte = file_name[0]            # Sync byte (8)
+def decompose_file(one_packet_bytes):
+    sync_byte = one_packet_bytes[0]            # Sync byte (8)
     continuity_counter_list = []
     num = 0
 
     # print("sync byte", sync_byte)
-    if file_name[0] != 0x47:
+    if one_packet_bytes[0] != 0x47:
         print(">> ERROR! First byte is not 0x47")
 
-    if hex(file_name[0]) == SYNC_BYTE:
+    if hex(one_packet_bytes[0]) == SYNC_BYTE:
         print("YES")
 
-    transport_error_indicator = ('{0:08b}'.format(file_name[1]))[0]         # transport_error_indicator (1)
+    transport_error_indicator = ('{0:08b}'.format(one_packet_bytes[1]))[0]         # transport_error_indicator (1)
     # print("transport_Error_indicator", transport_error_indicator)
 
     # <DONE> payload_unit_start_indicator (1)
-    payload_unit_start_indicator = (file_name[1] >> 6) & 1
+    payload_unit_start_indicator = (one_packet_bytes[1] >> 6) & 1
     print("payload_unit_start_indicator: ", bin(payload_unit_start_indicator))
 
     if payload_unit_start_indicator == 0b1:
         print(">> Second condition met for PAT")
 
     # <DONE> table_id (8)
-    table_id = file_name[5]
+    table_id = one_packet_bytes[5]
     print("table_id: ", hex(table_id))
 
     if table_id == 0x00:
         print(">> Third condition met for PAT")
 
-    transport_priority = ('{0:08b}'.format(file_name[1]))[2]         # transport_priority (1)
+    transport_priority = ('{0:08b}'.format(one_packet_bytes[1]))[2]         # transport_priority (1)
     # print("transport_priority", transport_priority)
 
-
     # pid (13)
-    pid = file_name[1]
-    print("pid", pid)
+    pid_left = one_packet_bytes[1] & 0x1F
+    pid_right = one_packet_bytes[2] & 0xFF
 
-    transport_scrambling_control = file_name[3]         # transport_scrambling_control (2)
+    # Checking conditions for PAT
+    if pid_left == 0x0 and pid_right == 0x0 and payload_unit_start_indicator == 0b1:
+        print(">> CONDITIONS MET FOR PID AND PUSI. PAT = YES")
+
+    transport_scrambling_control = one_packet_bytes[3]         # transport_scrambling_control (2)
     # print("transport_scrambling_control", '{0:08b}'.format(transport_scrambling_control)[0],
     #       '{0:08b}'.format(transport_scrambling_control)[1])
 
-    adaptation_field_control = file_name[3]             # adaptation_field_control (2)
+    adaptation_field_control = one_packet_bytes[3]             # adaptation_field_control (2)
     # print("adaptation_field_control", '{0:08b}'.format(adaptation_field_control)[2],
     #       '{0:08b}'.format(transport_scrambling_control)[3])
 
-    continuity_counter = file_name[3]                   # continuity_counter (4)
+    continuity_counter = one_packet_bytes[3]                   # continuity_counter (4)
     for i in range(4, 8):
         continuity_counter_list.append('{0:08b}'.format(continuity_counter)[i])
-        print("continuity_counter", '{0:08b}'.format(continuity_counter)[i])
+        # print("continuity_counter", '{0:08b}'.format(continuity_counter)[i])
 
     for b in continuity_counter_list:
         num = 2 * num + int(b)
     # print("continuity counter: ", num)
 
     # Four bytes after 0x47
-    print("---------- Four Bytes ----------")
-    for i in range(0, 5):
-        # print("ByteArray", bytearray(file_name))
-        print("file_name {}".format(i), ": ",  file_name[i], ". In binary: ", '{0:08b}'.format(file_name[i]),
-              "(", bin(file_name[i]), ")")
+    # print("---------- Four Bytes ----------")
+    # for i in range(0, 5):
+        # print("ByteArray", bytearray(one_packet_bytes))
+        # print("one_packet_bytes {}".format(i), ": ",  one_packet_bytes[i], ". In binary: ", '{0:08b}'.format(one_packet_bytes[i]),
+        #       "(", bin(one_packet_bytes[i]), ")")
 
-    # print("file_name[5]", file_name[5])
+    # print("one_packet_bytes[5]", one_packet_bytes[5])
 
 
     # <<< PAT INFORMATION >>>
-    # if file_name[5] == 0x0:
+    # if one_packet_bytes[5] == 0x0:
     #     print("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-    #     calculate_PAT(file_name)
+    #     calculate_PAT(one_packet_bytes)
 
     # # if os.path.exists(file_input):
     #     # scale = 16
@@ -151,16 +154,16 @@ def check_start(value):
         print(value)
 
 
-def calculate_PAT(file_name):
+def calculate_PAT(one_packet_bytes):
     print("---------- PAT Information ----------")
-    payload_unit_start_indicator = ('{0:08b}'.format(file_name[1]))[1]
-    section_syntax_indicator = ('{0:08b}'.format(file_name[6]))[0]
+    payload_unit_start_indicator = ('{0:08b}'.format(one_packet_bytes[1]))[1]
+    section_syntax_indicator = ('{0:08b}'.format(one_packet_bytes[6]))[0]
     print("section_syntax_indicator", section_syntax_indicator)
 
-    reserved_future_use = ('{0:08b}'.format(file_name[6]))[1]
+    reserved_future_use = ('{0:08b}'.format(one_packet_bytes[6]))[1]
     print("reserved_future_use", reserved_future_use)
 
-    reserved = ('{0:08b}'.format(file_name[6]))[2], ('{0:08b}'.format(file_name[6]))[3]
+    reserved = ('{0:08b}'.format(one_packet_bytes[6]))[2], ('{0:08b}'.format(one_packet_bytes[6]))[3]
     print("reserved", reserved)
 
     # section length (12)
