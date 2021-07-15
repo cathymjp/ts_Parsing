@@ -24,6 +24,7 @@ def decompose_file(one_packet_bytes):
     sync_byte = one_packet_bytes[0]            # Sync byte (8)
     continuity_counter_list = []
     num = 0
+    user_pid = enter_pid()
 
     # print("sync byte", sync_byte)
     if one_packet_bytes[0] != 0x47:
@@ -52,13 +53,19 @@ def decompose_file(one_packet_bytes):
     transport_priority = ('{0:08b}'.format(one_packet_bytes[1]))[2]         # transport_priority (1)
     # print("transport_priority", transport_priority)
 
-    # pid (13)
+
+
+    # <simplify if possible> pid (13)
     pid_left = one_packet_bytes[1] & 0x1F
     pid_right = one_packet_bytes[2] & 0xFF
+
+    # if user_pid == (f'0x{pid_left:x}{pid_right:x}'):
+    #     print("You have entered", user_pid, ".")
 
     # Checking conditions for PAT
     if pid_left == 0x0 and pid_right == 0x0 and payload_unit_start_indicator == 0b1:
         print(">> CONDITIONS MET FOR PID AND PUSI. PAT = YES")
+        calculate_PAT(one_packet_bytes)
 
     transport_scrambling_control = one_packet_bytes[3]         # transport_scrambling_control (2)
     # print("transport_scrambling_control", '{0:08b}'.format(transport_scrambling_control)[0],
@@ -134,12 +141,13 @@ def decompose_file(one_packet_bytes):
         #     print("\n")
         #     print("testing_two[0]", testing_two[0])
 
-
         # print("ERROR: Invalid filename. Please enter again: ")
 
 
-def enter_pid(file):
+def enter_pid():
     pid_value = input("Enter the PID value: ")
+
+    return pid_value
 
 
 def check_start(value):
@@ -155,17 +163,32 @@ def check_start(value):
 
 def calculate_PAT(one_packet_bytes):
     print("---------- PAT Information ----------")
-    payload_unit_start_indicator = ('{0:08b}'.format(one_packet_bytes[1]))[1]
-    section_syntax_indicator = ('{0:08b}'.format(one_packet_bytes[6]))[0]
-    print("section_syntax_indicator", section_syntax_indicator)
-
-    reserved_future_use = ('{0:08b}'.format(one_packet_bytes[6]))[1]
-    print("reserved_future_use", reserved_future_use)
-
-    reserved = ('{0:08b}'.format(one_packet_bytes[6]))[2], ('{0:08b}'.format(one_packet_bytes[6]))[3]
-    print("reserved", reserved)
+    # payload_unit_start_indicator = ('{0:08b}'.format(one_packet_bytes[1]))[1]
+    # section_syntax_indicator = ('{0:08b}'.format(one_packet_bytes[6]))[0]
+    # print("section_syntax_indicator", section_syntax_indicator)
+    #
+    # reserved_future_use = ('{0:08b}'.format(one_packet_bytes[6]))[1]
+    # print("reserved_future_use", reserved_future_use)
+    #
+    # reserved = ('{0:08b}'.format(one_packet_bytes[6]))[2], ('{0:08b}'.format(one_packet_bytes[6]))[3]
+    # print("reserved", reserved)
 
     # section length (12)
+
+    # section number (8)
+    section_number = one_packet_bytes[11]
+    print("Section number: ", hex(section_number))
+
+    # last section number (8)
+    last_section_number = one_packet_bytes[12]
+    print("Last section number: ", hex(last_section_number))
+
+    # program number (16)
+    program_number1 = one_packet_bytes[13]
+    program_number2 = one_packet_bytes[14]
+    # print("program_number1", program_number1, ", ", hex(program_number1))
+    # print("program_number2", program_number2, ", ", hex(program_number2))
+    print("Program number: ", f'0x{program_number1:x}{program_number2:x}')
 
 
 def calculate_PMT():
