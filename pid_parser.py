@@ -86,7 +86,6 @@ def decompose_file(one_packet_bytes):
 
     # print("one_packet_bytes[5]", one_packet_bytes[5])
 
-
     # <<< PAT INFORMATION >>>
     # if one_packet_bytes[5] == 0x0:
     #     print("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
