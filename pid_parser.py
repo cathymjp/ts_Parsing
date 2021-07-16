@@ -17,6 +17,10 @@ def open_file(file_input):
         #     with open(file_input, "rb") as file_object:
         reading_file = file_open.read(188)
         # print("reading_file", reading_file.hex(), end=' ')
+
+        if len(reading_file) < 188:
+            break
+
         decompose_file(reading_file)
 
 
@@ -35,8 +39,9 @@ def decompose_file(one_packet_bytes):
     transport_error_indicator = (one_packet_bytes[1] >> 7) & 1              # transport_error_indicator (1)
     payload_unit_start_indicator = (one_packet_bytes[1] >> 6) & 1           # payload_unit_start_indicator (1)
     transport_priority = (one_packet_bytes[1] >> 5) & 1                     # transport_priority (1)
-    pid_left = one_packet_bytes[1] & 0x1F                                   # <simplify if possible> pid (13)
+    pid_left = one_packet_bytes[1] & 0x1F                                   # pid (13)
     pid_right = one_packet_bytes[2] & 0xFF
+    pid = pid_left << 8 + pid_right
     transport_scrambling_control = (one_packet_bytes[3] & 0xC0) >> 6        # transport_scrambling_control (2)
     adaptation_field_control = (one_packet_bytes[3] & 0x30) >> 4            # adaptation_field_control (2)
     continuity_counter = one_packet_bytes[3] & 0x0F                         # continuity_counter (4)
@@ -56,35 +61,32 @@ def decompose_file(one_packet_bytes):
     #     print("You have entered", user_pid, ".")
 
     # Checking conditions for PAT
-    # if pid_left == 0x0 and pid_right == 0x0 and payload_unit_start_indicator == 0b1:
-    #     print(">> CONDITIONS MET FOR PID AND PUSI. PAT = TRUE")
-    #     calculate_PAT(one_packet_bytes)
+    if pid_left == 0x0 and pid_right == 0x0 and payload_unit_start_indicator == 0b1:
+        print(">> CONDITIONS MET FOR PID AND PUSI. PAT = TRUE")
+        calculate_PAT(one_packet_bytes)
 
-    if pid_left == 0x0 and pid_right == 0x0:
-        print("pid_left", pid_left)
-        print("pid_right", pid_right)
-        print("Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
+    # if pid_left == 0x0 and pid_right == 0x0:
+    # if pid == 0x0:
+        # print("pid", hex(pid))
+        # print("pid_left", pid_left)
+        # print("pid_right", pid_right)
+        # print("Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
 
     for b in continuity_counter_list:
         num = 2 * num + int(b)
 
-    # print("continuity counter: ", num)
-
     # if payload_unit_start_indicator == 0b1:
     #     print(">> Second condition met for PAT")
 
-
-
     # if table_id == 0x00:
     #     print(">> Third condition met for PAT")
+
     # Four bytes after 0x47
     # print("---------- Four Bytes ----------")
     # for i in range(0, 5):
         # print("ByteArray", bytearray(one_packet_bytes))
         # print("one_packet_bytes {}".format(i), ": ",  one_packet_bytes[i], ". In binary: ", '{0:08b}'.format(one_packet_bytes[i]),
         #       "(", bin(one_packet_bytes[i]), ")")
-
-    # print("one_packet_bytes[5]", one_packet_bytes[5])
 
     # <<< PAT INFORMATION >>>
     # if one_packet_bytes[5] == 0x0:
@@ -159,32 +161,25 @@ def calculate_PAT(one_packet_bytes):
 
     table_id = one_packet_bytes[5]                  # table_id (8)
 
-    # print("table_id: ", hex(table_id))
+    print("table_id: ", hex(table_id))
 
-    section_syntax_indicator = ('{0:08b}'.format(one_packet_bytes[6]))[0]
-    section_syntax_indicator2 = (one_packet_bytes[6] >> 7) & 1
-    print("section_syntax_indicator", bin(section_syntax_indicator))
-    print("section_syntax_indicator2", bin(section_syntax_indicator2))
-
-    reserved_future_use = ('{0:08b}'.format(one_packet_bytes[6]))[1]
-    reserved_future_use2 = (one_packet_bytes[6] >> 6) & 1
-    print("reserved_future_use", bin(reserved_future_use))
-    print("reserved_future_use2", bin(reserved_future_use2))
-
-    reserved = ('{0:08b}'.format(one_packet_bytes[6]))[2], ('{0:08b}'.format(one_packet_bytes[6]))[3]
-    reserved2 = (one_packet_bytes[3] & 0x30) >> 4
-    print("reserved", bin(reserved))
-    print("reserved2", bin(reserved2))
-
-    # section length (12)
-    section_length_left = one_packet_bytes[6] & 0x0F  # <simplify if possible> pid (13)
+    section_syntax_indicator = (one_packet_bytes[6] >> 7) & 1
+    reserved_future_use = (one_packet_bytes[6] >> 6) & 1
+    reserved = (one_packet_bytes[3] & 0x30) >> 4
+    section_length_left = one_packet_bytes[6] & 0x0F  # <simplify if possible> section length (12)
     section_length_right = one_packet_bytes[7] & 0xFF
+    section_length = section_length_left << 8 + section_length_right
 
-    print("section_length_left", section_length_left)
-    print("section_length_right", section_length_right)
+    print("section_syntax_indicator2", bin(section_syntax_indicator))
+    print("reserved_future_use", bin(reserved_future_use))
+    print("reserved", bin(reserved))
+    print("section length test", (f'0x{section_length_left:x}{section_length_right:x}'))
+    # print("section_length", hex(section_length))
 
     transport_stream_id = one_packet_bytes[8] + one_packet_bytes[9]
     print("transport_stream_id", hex(transport_stream_id))
+    print("transprot_stream_id8", hex(one_packet_bytes[8]))
+    print("transprot_stream_id9", hex(one_packet_bytes[9]))
 
     reserved_two = (one_packet_bytes[10] & 0xC0) >> 6
     print("reserved_#2", bin(reserved_two))
@@ -203,7 +198,10 @@ def calculate_PAT(one_packet_bytes):
 
     program_number1 = one_packet_bytes[13]              # program number (16)
     program_number2 = one_packet_bytes[14]
+    program_number = program_number1 << 8 + program_number2
+
     print("program_number", f'0x{program_number1:x}{program_number2:x}')
+    print("Program number2", program_number)
 
 
 def calculate_PMT():
