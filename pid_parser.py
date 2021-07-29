@@ -6,20 +6,22 @@ PACKET_NUMBER = 0
 
 def open_file(file_input):
     # while True:
-    #   ts_packets = []
-    # testing_array = []
-    #     num = 0
-    # Ask for file name to user
-    #     # file_input = input("Enter the filename of .ts: ")
-    #     # if os.path.exists(file_input + '.ts'):
-    # file_open = open(file_input + '.ts', "rb")
+        # ts_packets = []
+        # testing_array = []
+        # num = 0
+        # # Ask for file name to user
+        # file_input = input("Enter the filename of .ts: ")
+        # if os.path.exists(file_input + '.ts'):
+        #     file_open = open(file_input + '.ts', "rb")
+        # else:
+        #     print("ERROR: Invalid filename. Please enter again: ")
 
     file_open = open(file_input, 'rb')
+
     while True:
         # if os.path.exists(file_input):
         #     with open(file_input, "rb") as file_object:
         reading_file = file_open.read(188)
-        # print("reading_file", reading_file.hex(), end=' ')
 
         if len(reading_file) < 188:
             break
@@ -36,7 +38,6 @@ def decompose_file(one_packet_bytes):
 
     if sync_byte != SYNC_BYTE:
         print(">> ERROR! First byte is not 0x47")
-        # wrap it with try-error
 
     # print("---------------- Header ----------------")
     transport_error_indicator = (one_packet_bytes[1] >> 7) & 1              # transport_error_indicator (1)
@@ -49,13 +50,13 @@ def decompose_file(one_packet_bytes):
     adaptation_field_control = (one_packet_bytes[3] & 0x30) >> 4            # adaptation_field_control (2)
     continuity_counter = one_packet_bytes[3] & 0x0F                         # continuity_counter (4)
 
+    # Header
     print("Header: ", end='')
     file_output.write("Header: ")
     for i in range(0, 4):
         print('{0:0{1}X}'.format(one_packet_bytes[i], 2), end=' ')
         file_output.write("%s " % '{0:0{1}X}'.format(one_packet_bytes[i], 2))
 
-    # print("\n")
     print("\n     Packet Number:                  ", PACKET_NUMBER)
     file_output.write("\n\t Packet Number: \t\t\t %d" % PACKET_NUMBER)
 
@@ -87,20 +88,11 @@ def decompose_file(one_packet_bytes):
     file_output.write("\n\n")
 
     PACKET_NUMBER = PACKET_NUMBER + 1
-    # if user_pid == (f'0x{pid_left:x}{pid_right:x}'):
-    #     print("You have entered", user_pid, ".")
 
     # Checking conditions for PAT
     # if pid_left == 0x0 and pid_right == 0x0 and payload_unit_start_indicator == 0b1:
     #     print(">> CONDITIONS MET FOR PID AND PUSI. PAT = TRUE")
     #     calculate_PAT(one_packet_bytes)
-
-    # if pid == 0x0:
-        # print("pid", hex(pid))
-        # print("Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
-
-    for b in continuity_counter_list:
-        num = 2 * num + int(b)
 
     # if payload_unit_start_indicator == 0b1:
     #     print(">> Second condition met for PAT")
@@ -108,63 +100,17 @@ def decompose_file(one_packet_bytes):
     # if table_id == 0x00:
     #     print(">> Third condition met for PAT")
 
-    # Four bytes after 0x47
-    #     # print("---------- Four Bytes ----------")
-    #     # for i in range(0, 5):
-        # print("ByteArray", bytearray(one_packet_bytes))
-        # print("one_packet_bytes {}".format(i), ": ",  one_packet_bytes[i], ". In binary: ",
-        #  '{0:08b}'.format(one_packet_bytes[i]),
-        #       "(", bin(one_packet_bytes[i]), ")")
+    # Check if continuity counter increases sequentially
+    # if pid == 0x0:
+        # print("pid", hex(pid))
+        # print("Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
+
+    for b in continuity_counter_list:
+        num = 2 * num + int(b)
 
     # <<< PAT INFORMATION >>>
     # if one_packet_bytes[5] == 0x0:
-    #     print("YEEEEEEEEEEEEEEEEEEEEE")
     #     calculate_PAT(one_packet_bytes)
-
-    # # if os.path.exists(file_input):
-    #     # scale = 16
-    #     counter = 0
-    #     binary_string = ''
-    #     num_of_bits = 8
-    #     testing = []
-
-        # with open(file_input, "rb") as file_object:
-        #         testing.append(four_byte)
-        #         four_hex = file_object.read(1).hex()
-        #
-        #         print(four_byte, end=' ')
-        #         print(four_hex, end=' ')
-        #
-        #     print("\n")
-        #
-        #     for byte in testing:
-        #         int_value = ord(byte)
-        #         print("int_value", int_value)      # 71 == 0x47
-        #         binary_string = '{0:08b}'.format(int_value)
-        #         print(binary_string, end='\\')
-        #
-        #     print("\n")
-        #     for i in range(188):
-        #         first = file_object.read(1).hex()
-        #         testing_array.append(first)
-        #
-        #         print(first, end=' ')
-        #
-        #     print("\n")
-        #
-        #     # for i in range(1024):
-        #     #     packetHeader = file_object.read(1).hex()
-        #     #     moved = packetHeader >> 24
-        #     #     print("moved", moved)
-        #
-        #     print("\ntesting_array", testing_array)
-        #
-        #     # while True:
-        #     testing_two = file_object.read(188)
-        #     print("\n")
-        #     print("testing_two[0]", testing_two[0])
-
-        # print("ERROR: Invalid filename. Please enter again: ")
 
 
 def enter_pid():
