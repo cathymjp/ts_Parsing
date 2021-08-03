@@ -148,9 +148,9 @@ def calculate_PAT(one_packet_bytes):
     section_number = one_packet_bytes[11]  # section number (8)
     last_section_number = one_packet_bytes[12]  # last section number (8)
     program_number = (one_packet_bytes[13] << 8) + one_packet_bytes[14]
+    version_number = (one_packet_bytes[10] & 0x3E) >> 5
 
     print("Table ID:                    ", hex(table_id))
-
     print("Section Syntax Indicator:    ", bin(section_syntax_indicator))
     print("Reserved Future Use:         ", bin(reserved_future_use))
     print("Reserved:                    ", bin(reserved))
@@ -158,11 +158,8 @@ def calculate_PAT(one_packet_bytes):
     # print("section_length             ", hex(section_length))
     print("Transport Stream ID:         ", hex(transport_stream_id))
     print("Reserved #2:                 ", bin(reserved_two))
-
-    version_number = (one_packet_bytes[10] & 0x3E) >> 5
     print("one_packet[10]", bin(one_packet_bytes[10]))
     print("version number", bin(version_number))
-
     print("Current Next Indicator:      ", bin(current_next_indicator))
     print("Section Number:              ", hex(section_number))
     print("Last Section Number:         ", hex(last_section_number))
