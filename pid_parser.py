@@ -4,7 +4,7 @@ import os
 PACKET_NUMBER = 0
 
 
-def start_parse(file_input):
+def read_file(file_input):
     # while True:
         # ts_packets = []
         # testing_array = []
@@ -30,7 +30,7 @@ def start_parse(file_input):
 
 
 def decompose_file(one_packet_bytes):
-    # print("========== Packet Information ==========")
+    print("========== Packet Information ==========")
     sync_byte = one_packet_bytes[0]                                         # Sync byte (8)
     continuity_counter_list = []
     num = 0
@@ -172,7 +172,7 @@ def calculate_PMT():
 
 
 def main():
-    start_parse(file_input)       # In future, delete file_input to choosing file by asking the user or from file explorer
+    read_file(file_input)       # In future, delete file_input to choosing file by asking the user or from file explorer
 
     file_output.close()
 

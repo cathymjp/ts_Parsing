@@ -5,17 +5,17 @@ PACKET_NUMBER = 0
 TEN_COUNTER = 1
 
 
-def start_parse(file_input):
+def read_file(file_input):
     # while True:
-        # ts_packets = []
-        # testing_array = []
-        # num = 0
-        # # Ask for file name to user
-        # file_input = input("Enter the filename of .ts: ")
-        # if os.path.exists(file_input + '.ts'):
-        #     file_open = open(file_input + '.ts', "rb")
-        # else:
-        #     print("ERROR: Invalid filename. Please enter again: ")
+    #     ts_packets = []
+    #     testing_array = []
+    #     num = 0
+    #     # Ask for file name to user
+    #     file_input = input("Enter the filename of .ts: ")
+    #     if os.path.exists(file_input + '.ts'):
+    #         file_open = open(file_input + '.ts', "rb")
+    #     else:
+    #         print("ERROR: Invalid filename. Please enter again: ")
 
     file_open = open(file_input, 'rb')
 
@@ -39,6 +39,7 @@ def decompose_file(one_packet_bytes):
     global TEN_COUNTER
     # user_pid = enter_pid()
 
+    # Decompose Header
     if sync_byte != SYNC_BYTE:
         print(">> ERROR! First byte is not 0x47")
 
@@ -52,9 +53,9 @@ def decompose_file(one_packet_bytes):
     adaptation_field_control = (one_packet_bytes[3] & 0x30) >> 4            # adaptation_field_control (2)
     continuity_counter = one_packet_bytes[3] & 0x0F                         # continuity_counter (4)
 
+    # Check conditions for PAT
     if pid == 0x0000:
         while TEN_COUNTER <= 10:
-            # print("Bytes: ", one_packet_bytes.hex())
             print("PAT #", TEN_COUNTER)
             print("PID FOUND", '0x{0:0{1}X}'.format(pid, 4))
             print(" ".join(["{:02x}".format(x) for x in one_packet_bytes]))
@@ -94,15 +95,11 @@ def decompose_file(one_packet_bytes):
 
     # Check if continuity counter increases sequentially
     # if pid == 0x0:
-        # print("pid", hex(pid))
-        # print("Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
+    #     print("pid", hex(pid))
+    #     print("Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
 
     for b in continuity_counter_list:
         num = 2 * num + int(b)
-
-    # <<< PAT INFORMATION >>>
-    # if one_packet_bytes[5] == 0x0:
-    #     calculate_PAT(one_packet_bytes)
 
 
 def enter_pid():
@@ -112,8 +109,6 @@ def enter_pid():
 
 
 def check_start(value):
-    # var cc = packet[3] & 0xf
-    # byte = file_object.read(1)
     if value == chr(0x47):
         print("Found first sync byte")
         print(value)
@@ -140,8 +135,9 @@ def calculate_PAT(one_packet_bytes):
     last_section_number = one_packet_bytes[12]  # last section number (8)
 
     num_programs_data = int((section_length - 9) / 4)
-    for i in range(13, 13 + num_programs_data*4 + 4):   # print till the CRC
+    for i in range(5, 5 + num_programs_data*4 + 4):   # print till the CRC
         print('{0:0{1}X}'.format(one_packet_bytes[i], 2), end=' ')
+
     print("\n")
     print("Table ID:                    ", '0x{0:0{1}X}'.format(table_id, 2))
     print("Section Syntax Indicator:    ", bin(section_syntax_indicator))
@@ -151,7 +147,7 @@ def calculate_PAT(one_packet_bytes):
     # print("section_length             ", hex(section_length))
     print("Transport Stream ID:         ", '0x{0:0{1}X}'.format(table_id, 4))
     print("Reserved #2:                 ", bin(reserved_two))
-    print("version number:              ", bin(version_number))
+    print("version number:              ", version_number)      # display in decimal
     print("Current Next Indicator:      ", bin(current_next_indicator))
     print("Section Number:              ", '0x{0:0{1}X}'.format(section_number, 2))
     print("Last Section Number:         ", '0x{0:0{1}X}'.format(last_section_number, 2))
@@ -172,11 +168,13 @@ def calculate_PAT(one_packet_bytes):
         else:
             program_map_PID = (program_map_PID_left << 8) + program_map_PID_right
             print("\tprogram map PID: ", program_map_PID)
+            print("\tprogram map PID (hex): ", hex(program_map_PID))
 
     # CRC
     print("CRC: ", end='')
     for i in range(4):
-        CRC = one_packet_bytes[(13+(4 * num_programs_data)) + i]    # Starting position one_packet_bytes[13] + (no. programs * 4 bytes) + four CRC bytes (= i)
+        # Starting position one_packet_bytes[13] + (no. programs * 4 bytes) + four CRC bytes (= i)
+        CRC = one_packet_bytes[(13+(4 * num_programs_data)) + i]
         print('{0:0{1}X}'.format(CRC, 2), end=' ')
     print("\n")
 
@@ -187,7 +185,7 @@ def calculate_PMT():
 
 
 def main():
-    start_parse(file_input)       # In future, delete file_input to choosing file by asking the user or from file explorer
+    read_file(file_input)       # In future, delete file_input to choosing file by asking the user or from file explorer
 
 
 if __name__ == "__main__":
@@ -198,4 +196,3 @@ if __name__ == "__main__":
     file_input = "C:\\Users\\parkm\\Desktop\\France 20080505_Ch1.ts"
 
     main()
-
