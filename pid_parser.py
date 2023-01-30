@@ -4,7 +4,7 @@ import os
 PACKET_NUMBER = 0
 
 
-def read_file(file_input):
+def open_file(file_input):
     # while True:
         # ts_packets = []
         # testing_array = []
@@ -25,12 +25,11 @@ def read_file(file_input):
 
         if len(reading_file) < 188:
             break
-
         decompose_file(reading_file)
 
 
 def decompose_file(one_packet_bytes):
-    print("========== Packet Information ==========")
+    # print("========== Packet Information ==========")
     sync_byte = one_packet_bytes[0]                                         # Sync byte (8)
     continuity_counter_list = []
     num = 0
@@ -50,45 +49,53 @@ def decompose_file(one_packet_bytes):
     transport_scrambling_control = (one_packet_bytes[3] & 0xC0) >> 6        # transport_scrambling_control (2)
     adaptation_field_control = (one_packet_bytes[3] & 0x30) >> 4            # adaptation_field_control (2)
     continuity_counter = one_packet_bytes[3] & 0x0F                         # continuity_counter (4)
+    section_length_left = one_packet_bytes[6] & 0x0F  # <simplify if possible> section length (12)
+    section_length_right = one_packet_bytes[7] & 0xFF
+    section_length = (section_length_left << 8) + section_length_right
 
-    # Header
-    print("Header: ", end='')
-    file_output.write("Header: ")
-    for i in range(0, 4):
-        print('{0:0{1}X}'.format(one_packet_bytes[i], 2), end=' ')
-        file_output.write("%s " % '{0:0{1}X}'.format(one_packet_bytes[i], 2))
+    if pid == 0x0012:
+        # Header
+        # print("Header: ", end='')
+        # # file_output.write("Header: ")
+        for i in range(0, 4):
+            print('{0:0{1}X}'.format(one_packet_bytes[i], 2), end=' ')
+            # file_output.write("%s " % '{0:0{1}X}'.format(one_packet_bytes[i], 2))
+        print("bytes: ", one_packet_bytes.hex())
+        print("\n     Packet Number:                  ", PACKET_NUMBER)
+        # file_output.write("\n\t Packet Number: \t\t\t %d" % PACKET_NUMBER)
 
-    print("\n     Packet Number:                  ", PACKET_NUMBER)
-    file_output.write("\n\t Packet Number: \t\t\t %d" % PACKET_NUMBER)
+        print("     Sync Byte                       ", hex(sync_byte))
+        # file_output.write("\n\t Sync Byte \t\t\t %s" % hex(sync_byte))
 
-    print("     Sync Byte                       ", hex(sync_byte))
-    file_output.write("\n\t Sync Byte \t\t\t %s" % hex(sync_byte))
+        print("     Transport Error Indicator       ", bin(transport_error_indicator))
+        # file_output.write("\n\t Transport Error Indicator \t\t %s" % bin(transport_error_indicator))
 
-    print("     Transport Error Indicator       ", bin(transport_error_indicator))
-    file_output.write("\n\t Transport Error Indicator \t\t %s" % bin(transport_error_indicator))
+        print("     Payload Unit Start Indicator    ", bin(payload_unit_start_indicator))
+        # file_output.write("\n\t Payload Unit Start Indicator \t\t %s" % bin(payload_unit_start_indicator))
 
-    print("     Payload Unit Start Indicator    ", bin(payload_unit_start_indicator))
-    file_output.write("\n\t Payload Unit Start Indicator \t\t %s" % bin(payload_unit_start_indicator))
+        print("     Transport Priority              ", bin(transport_priority))
+        # file_output.write("\n\t Transport Priority \t\t\t %s" % bin(transport_priority))
 
-    print("     Transport Priority              ", bin(transport_priority))
-    file_output.write("\n\t Transport Priority \t\t\t %s" % bin(transport_priority))
+        print("     PID                             ", '0x{0:0{1}X}'.format(pid, 4))
+        # file_output.write("\n\t PID    \t\t\t\t %s" % '0x{0:0{1}X}'.format(pid, 4))
 
-    print("     PID                             ", '0x{0:0{1}X}'.format(pid, 4))
-    file_output.write("\n\t PID    \t\t\t\t %s" % '0x{0:0{1}X}'.format(pid, 4))
+        print("     Transport Scrambling Control    ", bin(transport_scrambling_control))
+        # file_output.write("\n\t Transport Scrambling Control \t %s" % bin(transport_scrambling_control))
 
-    print("     Transport Scrambling Control    ", bin(transport_scrambling_control))
-    file_output.write("\n\t Transport Scrambling Control \t %s" % bin(transport_scrambling_control))
+        print("     Adaptation Field Control        ", bin(adaptation_field_control))
+        # file_output.write("\n\t Adaptation Field Control \t\t %s" % bin(adaptation_field_control))
 
-    print("     Adaptation Field Control        ", bin(adaptation_field_control))
-    file_output.write("\n\t Adaptation Field Control \t\t %s" % bin(adaptation_field_control))
+        print("     Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
 
-    print("     Continuity Counter              ", bin(continuity_counter), "(", hex(continuity_counter), ")")
-    file_output.write("\n\t Continuity Counter \t\t %s (%s)" % (bin(continuity_counter),  hex(continuity_counter)))
+        # file_output.write("\n\t Continuity Counter \t\t %s (%s)" % (bin(continuity_counter), hex(continuity_counter)))
+        print("Section Length Test:         ", f'0x{section_length_left:x}{section_length_right:x}')
+        # print("\n")
+        # file_output.write("\n\n")
 
-    print("\n")
-    file_output.write("\n\n")
-
-    PACKET_NUMBER = PACKET_NUMBER + 1
+        # PACKET_NUMBER = PACKET_NUMBER + 1
+        # TDT_check(one_packet_bytes)
+        # SDT_check(one_packet_bytes)
+        EIT_check(one_packet_bytes)
 
     # Checking conditions for PAT
     # if pid_left == 0x0 and pid_right == 0x0 and payload_unit_start_indicator == 0b1:
@@ -114,6 +121,92 @@ def decompose_file(one_packet_bytes):
     #     calculate_PAT(one_packet_bytes)
 
 
+def TDT_check(one_packet_bytes):
+    table_id = one_packet_bytes[5]
+    section_syntax_indicator = (one_packet_bytes[6] >> 7) & 1
+    reserved_future_use = (one_packet_bytes[6] >> 6) & 1
+    reserved = (one_packet_bytes[6] & 0x30) >> 4
+    section_length_left = one_packet_bytes[6] & 0x0F  # <simplify if possible> section length (12)
+    section_length_right = one_packet_bytes[7] & 0xFF
+    section_length = (section_length_left << 8) + section_length_right
+    UTC_time = one_packet_bytes[8]
+    UTC_time1 = one_packet_bytes[9]
+    UTC_time2 = one_packet_bytes[10]
+    UTC_time3 = one_packet_bytes[11]
+    UTC_time4 = one_packet_bytes[12]
+
+    if table_id == 0x70:
+        print("BYTES:", one_packet_bytes.hex())
+        print("table_id", hex(table_id))
+        print("Section Syntax Indicator:    ", bin(section_syntax_indicator))
+        print("Reserved Future Use:         ", bin(reserved_future_use))
+        print("Reserved:                    ", bin(reserved))
+        print("Section Length Test:         ", f'0x{section_length_left:x}{section_length_right:x}')
+        print("UTC time: ", hex(UTC_time))
+        print("UTC time1: ", hex(UTC_time1))
+        print("UTC time2: ", hex(UTC_time2))
+        print("UTC time3: ", hex(UTC_time3))
+        print("UTC time4: ", hex(UTC_time4))
+        print("\n")
+
+
+def EIT_check(one_packet_bytes):
+    table_id = one_packet_bytes[5]
+    section_syntax_indicator = (one_packet_bytes[6] >> 7) & 1
+    reserved_future_use = (one_packet_bytes[6] >> 6) & 1
+    reserved = (one_packet_bytes[6] & 0x30) >> 4
+    section_length_left = one_packet_bytes[6] & 0x0F  # <simplify if possible> section length (12)
+    section_length_right = one_packet_bytes[7] & 0xFF
+    section_length = (section_length_left << 8) + section_length_right
+    UTC_time = one_packet_bytes[8]
+    UTC_time1 = one_packet_bytes[9]
+    UTC_time2 = one_packet_bytes[10]
+    UTC_time3 = one_packet_bytes[11]
+    UTC_time4 = one_packet_bytes[12]
+
+    if 0x60 <= table_id <= 0x6F:
+        print("BYTES:", one_packet_bytes.hex())
+        print("table_id", hex(table_id))
+        print("Section Syntax Indicator:    ", bin(section_syntax_indicator))
+        print("Reserved Future Use:         ", bin(reserved_future_use))
+        print("Reserved:                    ", bin(reserved))
+        print("Section Length Test:         ", f'0x{section_length_left:x}{section_length_right:x}')
+        print("UTC time: ", hex(UTC_time))
+        print("UTC time1: ", hex(UTC_time1))
+        print("UTC time2: ", hex(UTC_time2))
+        print("UTC time3: ", hex(UTC_time3))
+        print("UTC time4: ", hex(UTC_time4))
+        print("\n")
+
+def SDT_check(one_packet_bytes):
+    table_id = one_packet_bytes[5]
+    section_syntax_indicator = (one_packet_bytes[6] >> 7) & 1
+    reserved_future_use = (one_packet_bytes[6] >> 6) & 1
+    reserved = (one_packet_bytes[6] & 0x30) >> 4
+    section_length_left = one_packet_bytes[6] & 0x0F  # <simplify if possible> section length (12)
+    section_length_right = one_packet_bytes[7] & 0xFF
+    section_length = (section_length_left << 8) + section_length_right
+    UTC_time = one_packet_bytes[8]
+    UTC_time1 = one_packet_bytes[9]
+    UTC_time2 = one_packet_bytes[10]
+    UTC_time3 = one_packet_bytes[11]
+    UTC_time4 = one_packet_bytes[12]
+
+    if table_id == 0x40:
+        print("BYTES:", one_packet_bytes.hex())
+        # print("table_id", hex(table_id))
+        # print("Section Syntax Indicator:    ", bin(section_syntax_indicator))
+        # print("Reserved Future Use:         ", bin(reserved_future_use))
+        # print("Reserved:                    ", bin(reserved))
+        # print("Section Length Test:         ", f'0x{section_length_left:x}{section_length_right:x}')
+        # print("UTC time: ", hex(UTC_time))
+        # print("UTC time1: ", hex(UTC_time1))
+        # print("UTC time2: ", hex(UTC_time2))
+        # print("UTC time3: ", hex(UTC_time3))
+        # print("UTC time4: ", hex(UTC_time4))
+        print("\n")
+
+
 def enter_pid():
     pid_value = input("Enter the PID value: ")
 
@@ -137,7 +230,7 @@ def calculate_PAT(one_packet_bytes):
     table_id = one_packet_bytes[5]                  # table_id (8)
     section_syntax_indicator = (one_packet_bytes[6] >> 7) & 1
     reserved_future_use = (one_packet_bytes[6] >> 6) & 1
-    reserved = (one_packet_bytes[3] & 0x30) >> 4
+    reserved = (one_packet_bytes[6] & 0x30) >> 4
     section_length_left = one_packet_bytes[6] & 0x0F  # <simplify if possible> section length (12)
     section_length_right = one_packet_bytes[7] & 0xFF3
     section_length = (section_length_left << 8) + section_length_right
@@ -148,7 +241,6 @@ def calculate_PAT(one_packet_bytes):
     section_number = one_packet_bytes[11]  # section number (8)
     last_section_number = one_packet_bytes[12]  # last section number (8)
     program_number = (one_packet_bytes[13] << 8) + one_packet_bytes[14]
-    version_number = (one_packet_bytes[10] & 0x3E) >> 5
 
     print("Table ID:                    ", hex(table_id))
     print("Section Syntax Indicator:    ", bin(section_syntax_indicator))
@@ -158,8 +250,11 @@ def calculate_PAT(one_packet_bytes):
     # print("section_length             ", hex(section_length))
     print("Transport Stream ID:         ", hex(transport_stream_id))
     print("Reserved #2:                 ", bin(reserved_two))
+
+    version_number = (one_packet_bytes[10] & 0x3E) >> 5
     print("one_packet[10]", bin(one_packet_bytes[10]))
     print("version number", bin(version_number))
+
     print("Current Next Indicator:      ", bin(current_next_indicator))
     print("Section Number:              ", hex(section_number))
     print("Last Section Number:         ", hex(last_section_number))
@@ -172,7 +267,7 @@ def calculate_PMT():
 
 
 def main():
-    read_file(file_input)       # In future, delete file_input to choosing file by asking the user or from file explorer
+    open_file(file_input)       # In future, delete file_input to choosing file by asking the user or from file explorer
 
     file_output.close()
 
