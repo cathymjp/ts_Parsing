@@ -1,4 +1,4 @@
-# tsTesting
+# ts (transport stream) Parser
 
 ## Introduction
 - PID parser for MPEG ts streams based on ETSI EN 300 468 Digital Video Broadcasting (DVB); 
